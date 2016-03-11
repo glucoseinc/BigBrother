@@ -1,0 +1,49 @@
+---
+- name: install supervisor
+  apt: name=supervisor state=present
+
+- name: start supervisor
+  service: name=supervisor state=started enabled=yes
+
+- name: put supervisor.conf
+  template: src=supervisord.conf.j2 dest=/etc/supervisor/supervisord.conf
+  notify: restart supervisord
+
+- name: put toire.conf
+  template: src=toire.conf.j2 dest=/etc/supervisor/conf.d/toire.conf
+  notify:
+    - reload supervisord conf
+    - restart toire
+
+- name: create project directory
+  file: path=/var/work/toire state=directory
+
+- name: check virtualenv exist
+  stat: path=/var/work/toire/.env
+  register: virtualenv_result
+
+- name: create virtualenv
+  shell: virtualenv .env
+  args:
+    chdir: /var/work/toire
+  when: virtualenv_result.stat.exists == False
+
+- name: create log directory
+  file: path=/var/log/toire state=directory
+
+- name: sychronize project directory
+  synchronize:
+    src: ../../../../
+    dest: /var/work/toire/
+    compress: yes
+    rsync_opts:
+      - "--no-p"
+      - "--no-o"
+      - "--no-g"
+      - "--exclude=.*"
+      - "--exclude=*.pyc"
+      - "--exclude=/ansible"
+      - "--exclude=README.md"
+  notify:
+    - pip install
+    - restart toire

@@ -1,0 +1,27 @@
+[program:toire]
+command=/var/work/toire/.env/bin/python ./toire/sensor.py
+user=root
+process_name=%(program_name)s
+numprocs=1
+numprocs_start=0
+priority=997
+autostart=true
+autorestart=true
+startsecs=5
+startretries=3
+exitcodes=0,2
+stopsignal=INT
+stopwaitsecs=60
+redirect_stderr=false
+stdout_logfile=/var/log/toire/watcher.log
+stdout_logfile_maxbytes=1MB
+stdout_logfile_backups=10
+stdout_capture_maxbytes=0
+stdout_events_enabled=false
+stderr_logfile=/var/log/toire/watcher_err.log
+stderr_logfile_maxbytes=1MB
+stderr_logfile_backups=10
+stderr_capture_maxbytes=0
+stderr_events_enabled=false
+directory=/var/work/toire
+serverurl=AUTO

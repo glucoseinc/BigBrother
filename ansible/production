@@ -1,0 +1,5 @@
+[raspberry-pies]
+192.168.1.19
+
+[raspberry-pies:vars]
+ansible_user=pi

@@ -1,0 +1,5 @@
+---
+- hosts: raspberry-pies
+  become: yes
+  roles:
+    - watcher

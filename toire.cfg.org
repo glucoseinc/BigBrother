@@ -1,0 +1,18 @@
+[mode]
+debug = yes
+
+[slack]
+channel = 
+hook_url = 
+
+[HC-SR04]
+trig_pin = 17
+echo_pin = 27
+
+[measurement]
+# 鏡から壁までの距離 [m]
+mirror_to_wall = 2.0
+# 許容誤差 [m]
+error = 0.05
+# 計測間隔 [s]
+interval = 1

@@ -1,0 +1,14 @@
+---
+- name: restart supervisord
+  service: name=supervisor state=restarted
+
+- name: reload supervisord conf
+  shell: /usr/bin/supervisorctl -c /etc/supervisor/supervisord.conf reload
+
+- name: pip install
+  shell: .env/bin/pip install -U -r requirements.txt
+  args:
+    chdir: /var/work/toire
+
+- name: restart toire
+  shell: /usr/bin/supervisorctl -c /etc/supervisor/supervisord.conf restart toire
