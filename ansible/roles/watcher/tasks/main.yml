@@ -1,4 +1,10 @@
 ---
+- name: enable spi
+  lineinfile: dest=/etc/modules line="spidev"
+
+- name: comment out spi-bcm2708 in blacklist
+  lineinfile: dest=/etc/modprobe.d/raspi-blacklist.conf regexp="^(blacklist\s+spi-bcm2708)$" line="# \1" backrefs=yes
+
 - name: install supervisor
   apt: name=supervisor state=present
 
@@ -47,3 +53,4 @@
   notify:
     - pip install
     - restart toire
+  tags: rsync

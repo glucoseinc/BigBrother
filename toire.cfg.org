@@ -5,14 +5,25 @@ debug = yes
 channel = 
 hook_url = 
 
+[sensor]
+# name = HCSR04
+name = GP2Y0A710K
+
 [HC-SR04]
 trig_pin = 17
 echo_pin = 27
 
+[GP2Y0A710K]
+ad_convertor = MCP3208
+coefficient = 161.57
+intercept = 1.07
+
+[MCP3208]
+device_file = /dev/spidev0.0
+vref = 5.0
+ch = 0
+
 [measurement]
-# 鏡から壁までの距離 [m]
 mirror_to_wall = 2.0
-# 許容誤差 [m]
 error = 0.05
-# 計測間隔 [s]
 interval = 1
