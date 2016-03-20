@@ -63,3 +63,4 @@ target/
 
 # toire
 toire.cfg
+ansible/site.retry

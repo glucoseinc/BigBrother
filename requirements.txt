@@ -1,1 +1,2 @@
-RPi.GPIO==0.5.11
+python-periphery>=1.0.0
+RPi.GPIO>=0.5.11

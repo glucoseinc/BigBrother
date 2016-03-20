@@ -1,114 +1,78 @@
 # -*- coding: utf-8 -*-
 from __future__ import (unicode_literals, absolute_import)
-import ConfigParser
-import httplib
-import json
 import logging
-import os
 import time
-from urlparse import urlparse
 
 import RPi.GPIO as GPIO
 
+from . import config
+from . import ad_convertor
 
-config = ConfigParser.ConfigParser()
-with open(os.path.join(os.path.dirname(__file__), '..', 'toire.cfg'), 'r') as cfg:
-    config.readfp(cfg)
+
+__all__ = ['HCSR04', 'GP2Y0A710K']
 
 
 logger = logging.getLogger(__name__)
-stream_handler = logging.StreamHandler()
-stream_handler.setLevel(logging.INFO)
-stream_handler.setFormatter(logging.Formatter('[%(asctime)s] %(name)s - %(levelname)s - %(message)s'))
-logger.setLevel(logging.INFO)
-logger.addHandler(stream_handler)
 
-
-TRIG_PIN = config.getint('HC-SR04', 'trig_pin')
-ECHO_PIN = config.getint('HC-SR04', 'echo_pin')
 SPEED_OF_SOUND = 340  # [m/s]
-MIRROR_TO_WALL = config.getfloat('measurement', 'mirror_to_wall')
-ERROR = config.getfloat('measurement', 'error')
-DEBUG = config.getboolean('mode', 'debug')
 
 
-def initialize():
-    GPIO.setwarnings(False)
+class AbstractSensor(object):
+    def measure_distance(self):
+        raise NotImplementedError
 
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setup(TRIG_PIN, GPIO.OUT)
-    GPIO.setup(ECHO_PIN, GPIO.IN)
-    GPIO.output(TRIG_PIN, GPIO.LOW)
-    time.sleep(0.3)
+    def clean_up(self):
+        raise NotImplementedError
 
 
-def measure_distance():
-    # パルスを10us以上出力
-    GPIO.output(TRIG_PIN, GPIO.HIGH)
-    time.sleep(1.2E-5)
-    GPIO.output(TRIG_PIN, GPIO.LOW)
+class HCSR04(AbstractSensor):
+    def __init__(self):
+        super(HCSR04, self).__init__()
 
-    while GPIO.input(ECHO_PIN) == GPIO.LOW:
-        signal_off = time.time()
+        self.trig_pin = config.getint('HC-SR04', 'trig_pin')
+        self.echo_pin = config.getint('HC-SR04', 'echo_pin')
 
-    while GPIO.input(ECHO_PIN) == GPIO.HIGH:
-        signal_on = time.time()
+        GPIO.setwarnings(False)
 
-    diff_time = signal_on - signal_off
-    # 超音波が反射して戻ってくるまでの時間なので半分にする
-    return diff_time / 2.0 * SPEED_OF_SOUND
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(self.trig_pin, GPIO.OUT)
+        GPIO.setup(self.echo_pin, GPIO.IN)
+        GPIO.output(self.trig_pin, GPIO.LOW)
+        time.sleep(0.3)
 
+    def measure_distance(self):
+        # パルスを10us以上出力
+        GPIO.output(self.trig_pin, GPIO.HIGH)
+        time.sleep(1.2E-5)
+        GPIO.output(self.trig_pin, GPIO.LOW)
 
-def is_someone_using(distance):
-    if MIRROR_TO_WALL - ERROR < distance:
-        return False
-    return True
+        while GPIO.input(self.echo_pin) == GPIO.LOW:
+            signal_off = time.time()
 
+        while GPIO.input(self.echo_pin) == GPIO.HIGH:
+            signal_on = time.time()
 
-def notify(is_using):
-    if DEBUG:
-        return
+        diff_time = signal_on - signal_off
+        # 超音波が反射して戻ってくるまでの時間なので半分にする
+        distance = diff_time / 2.0 * SPEED_OF_SOUND
+        return distance
 
-    headers = {'Content-Type': 'application/json'}
-    payload = json.dumps({
-        'channel': config.get('slack', 'channel'),
-        'username': 'トイレ速報',
-        'attachments': [{
-            'fallback': 'トイレの状態が変わりました。',
-            'color': 'danger' if is_using else 'good',
-            'fields': [{
-                'title': 'State',
-                'value': '入ってます...' if is_using else '終わりました !',
-            }],
-        }]
-    })
-    parse_result = urlparse(config.get('slack', 'hook_url'))
-    connection = httplib.HTTPSConnection(parse_result.netloc)
-    connection.request('POST', parse_result.path, payload, headers)
-    response = connection.getresponse()
-    if response.status == 200:
-        logger.error('POST failed: {}'.format(response.reason))
-
-
-def main():
-    try:
-        current_state = False
-        previous_state = False
-        initialize()
-        while True:
-            distance = measure_distance()
-            logger.info('distance: {:0.3f}m'.format(distance))
-            current_state = is_someone_using(distance)
-            if current_state != previous_state:
-                notify(current_state)
-            previous_state = current_state
-
-            time.sleep(config.getint('measurement', 'interval'))
-    except KeyboardInterrupt:
-        logger.info('QUIT')
-    finally:
+    def clean_up(self):
         GPIO.cleanup()
 
 
-if __name__ == '__main__':
-    main()
+class GP2Y0A710K(AbstractSensor):
+    def __init__(self):
+        super(GP2Y0A710K, self).__init__()
+
+        self.ad_convertor = getattr(ad_convertor, config.get('GP2Y0A710K', 'ad_convertor'))()
+
+    def measure_distance(self):
+        voltage = self.ad_convertor.read()
+        logger.debug('voltage: {}'.format(voltage))
+        # 距離の逆数特性から距離を計算
+        distance = 1 / ((voltage - config.getfloat('GP2Y0A710K', 'intercept')) / config.getfloat('GP2Y0A710K', 'coefficient'))
+        return distance
+
+    def clean_up(self):
+        self.ad_convertor.clean_up()
