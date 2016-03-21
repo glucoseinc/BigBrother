@@ -2,8 +2,11 @@
 - name: enable spi
   lineinfile: dest=/etc/modules line="spidev"
 
-- name: comment out spi-bcm2708 in blacklist
+- name: uncomment spi-bcm2708 in blacklist
   lineinfile: dest=/etc/modprobe.d/raspi-blacklist.conf regexp="^(blacklist\s+spi-bcm2708)$" line="# \1" backrefs=yes
+
+- name: uncomment dtparam=spi
+  lineinfile: dest=/boot/config.txt regexp="^#(dtparam=spi=on)$" line="\1" backrefs=yes
 
 - name: install supervisor
   apt: name=supervisor state=present
@@ -24,12 +27,18 @@
 - name: create project directory
   file: path=/var/work/toire state=directory
 
-- name: check virtualenv exist
+- name: install python-***
+  apt: name={{ item }} state=present
+  with_items:
+    - python-dev
+    - python-virtualenv
+
+- name: check toire-virtualenv exist
   stat: path=/var/work/toire/.env
   register: virtualenv_result
 
 - name: create virtualenv
-  shell: virtualenv .env
+  shell: virtualenv .env --no-site-packages
   args:
     chdir: /var/work/toire
   when: virtualenv_result.stat.exists == False
