@@ -13,8 +13,7 @@ from . import sensor
 __all__ = ['Watcher']
 
 
-WALL_TO_WALL = config.getfloat('measurement', 'wall_to_wall')
-MEASUREMENT_ERROR = config.getfloat('measurement', 'error')
+THRESHOLD_DISTANCE = config.getfloat('measurement', 'threshold_distance')
 MEASUREMENT_INTERVAL = config.getfloat('measurement', 'interval')
 DEBUG = config.getboolean('mode', 'debug')
 
@@ -46,8 +45,8 @@ class Watcher(object):
             self.sensor_device.clean_up()
 
     def is_someone_using(self, distance):
-        if WALL_TO_WALL - MEASUREMENT_ERROR < distance:
-            return False
+        if THRESHOLD_DISTANCE < distance:
+            False
         return True
 
     def notify(self, is_using):

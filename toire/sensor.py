@@ -62,6 +62,8 @@ class HCSR04(AbstractSensor):
 
 
 class GP2Y0A710K(AbstractSensor):
+    DISTANCE_UNIT = 100.0
+
     def __init__(self):
         super(GP2Y0A710K, self).__init__()
 
@@ -72,7 +74,8 @@ class GP2Y0A710K(AbstractSensor):
         logger.debug('voltage: {}'.format(voltage))
         # 距離の逆数特性から距離を計算
         distance = 1 / ((voltage - config.getfloat('GP2Y0A710K', 'intercept')) / config.getfloat('GP2Y0A710K', 'coefficient'))
-        return distance
+        # 単位をメートルにする
+        return distance / GP2Y0A710K.DISTANCE_UNIT
 
     def clean_up(self):
         self.ad_convertor.clean_up()
