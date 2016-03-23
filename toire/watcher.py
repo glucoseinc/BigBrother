@@ -46,7 +46,7 @@ class Watcher(object):
 
     def is_someone_using(self, distance):
         if THRESHOLD_DISTANCE < distance:
-            False
+            return False
         return True
 
     def notify(self, is_using):
