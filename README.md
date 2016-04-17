@@ -1,4 +1,4 @@
-# toire
+# Big Brother
 ![RASPBIAN](https://img.shields.io/badge/RASPBIAN%20JESSIE-March%202016-green.svg) ![Python](https://img.shields.io/badge/Python-2.7-blue.svg)
 
 誰かがトイレに入った時や出た時に slack に通知する bot

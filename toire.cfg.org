@@ -2,7 +2,7 @@
 debug = yes
 
 [slack]
-channel = 
+channel = #bigbrother
 hook_url = 
 
 [sensor]
@@ -26,3 +26,4 @@ ch = 0
 [measurement]
 threshold_distance = 1.3
 interval = 1
+distance_average_duration = 3
