@@ -15,6 +15,7 @@ __all__ = ['Watcher']
 
 THRESHOLD_DISTANCE = config.getfloat('measurement', 'threshold_distance')
 MEASUREMENT_INTERVAL = config.getfloat('measurement', 'interval')
+DISTANCE_AVERAGE_DURATION = config.getfloat('measurement', 'distance_average_duration')
 DEBUG = config.getboolean('mode', 'debug')
 
 logger = logging.getLogger(__name__)
@@ -23,6 +24,7 @@ logger = logging.getLogger(__name__)
 class Watcher(object):
     def __init__(self):
         self.sensor_device = getattr(sensor, config.get('sensor', 'name'))()
+        self.distances = []
 
     def run(self):
         try:
@@ -45,7 +47,15 @@ class Watcher(object):
             self.sensor_device.clean_up()
 
     def is_someone_using(self, distance):
-        if THRESHOLD_DISTANCE < distance:
+        # 指定期間の平均をとって、ノイズを除去
+        max_distance_count = DISTANCE_AVERAGE_DURATION / MEASUREMENT_INTERVAL
+        if len(self.distances) >= max_distance_count:
+            self.distances.pop(0)
+        self.distances.append(distance)
+        distance_average = reduce(lambda x, y: x + y, self.distances) / len(self.distances)
+        logger.debug('average: {:0.3f}m'.format(distance_average))
+
+        if THRESHOLD_DISTANCE < distance_average:
             return False
         return True
 
